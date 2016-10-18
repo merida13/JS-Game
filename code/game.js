@@ -155,6 +155,32 @@ DOMDisplay.prototype.scrollPlayerIntoView = function() {
   else if (center.y > bottom - margin)
     this.wrap.scrollTop = center.y + margin - height;
 };
+
+// Return the first obstacle found given a size and position.
+Level.prototype.obstacleAt = function(pos, size) {
+  // Find the "coordinate" of the tile representing left bound
+  var xStart = Math.floor(pos.x);
+  // right bound
+  var xEnd = Math.ceil(pos.x + size.x);
+  // top bound
+  var yStart = Math.floor(pos.y);
+  // Bottom bound
+  var yEnd = Math.ceil(pos.y + size.y);
+
+  // Consider the sides and top and bottom of the level as walls
+  if (xStart < 0 || xEnd > this.width || yStart < 0 || yEnd > this.height)
+    return "wall";
+
+  // Check each grid position starting at yStart, xStart
+  // for a possible obstacle (non null value)
+  for (var y = yStart; y < yEnd; y++) {
+    for (var x = xStart; x < xEnd; x++) {
+	 var fieldType = this.grid[y][x];
+ if (fieldType) return fieldType;
+    }
+  }
+};
+
  
 //Update simulation each step based on keys & step size
 Level.prototype.animate = function(step, keys) {
@@ -179,10 +205,11 @@ Player.prototype.moveX = function(step, level, keys) {
   if (keys.right) this.speed.x += playerXSpeed;
 
   var motion = new Vector(this.speed.x * step, 0);
-
   var newPos = this.pos.plus(motion);
   
- this.pos = newPos;
+  var obstacle = level.obstacleAt(newPos, this.size);
+  if (obstacle!="wall")
+	this.pos = newPos;
 };
 
 var gravity = 30;
@@ -190,14 +217,18 @@ var jumpSpeed = 17;
 var playerYSpeed = 7;
 
 Player.prototype.moveY = function(step, level, keys) {
-	this.speed.y = 0;
-  if (keys.up) this.speed.y -= playerYSpeed;
-  if (keys.down) this.speed.y += playerYSpeed;
-  var motion = new Vector(0, this.speed.y * step);
-  var newPos = this.pos.plus(motion);
-
-  // Remember the position
-  this.pos = newPos;
+	this.speed.y += step * gravity;;
+	var motion = new Vector(0, this.speed.y * step);
+	var newPos = this.pos.plus(motion);
+	var obstacle = level.obstacleAt(newPos, this.size);
+	if (obstacle) {
+		if (keys.up && this.speed.y > 0)
+			this.speed.y = -jumpSpeed;
+		else 
+			this.speed.y = 0;
+	} else {
+		this.pos = newPos;
+	}
 };
 
 Player.prototype.act = function(step, level, keys) {
