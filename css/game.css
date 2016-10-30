@@ -7,7 +7,8 @@
 .hill	{background: rgb(139,69,19); }
 .actor  { position: absolute;  }
 .player { background: rgb(64, 64, 64); }
-
+.coin {background: white; }
+.dino {background: rgb(255, 128, 0); }
 .game {
   overflow: hidden;
   max-width: 600px;
