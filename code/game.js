@@ -3,6 +3,7 @@ var actorChars = {
   "@": Player,
   "o": Coin, // A coin will wobble up and down
   "d": Enemy,
+  "e": Egg,
   "=": Tar, "|": Tar, "v": Tar 
 };
 
@@ -36,10 +37,14 @@ function Level(plan) {
         this.actors.push(new Actor(new Vector(x, y), ch));
 	else if (ch == "d")
         fieldType = "wall";
-      else if (ch == "x")
+    else if (ch == "x")
         fieldType = "wall";
+	else if (ch == "e")
+        fieldType = "egg";
+	else if (ch == "d")
+        fieldType = "enemy";
       // Because there is a third case (space ' '), use an "else if" instead of "else"
-      else if (ch == "!")
+    else if (ch == "!")
         fieldType = "tar";
 
       // "Push" the fieldType, which is a string, onto the gridLine array (at the end).
@@ -99,6 +104,14 @@ function Enemy(pos) {
   this.wobble = Math.random() * Math.PI * 2;
 }
 Enemy.prototype.type = "enemy";
+
+function Egg(pos) {
+  this.basePos = this.pos = pos.plus(new Vector(0.2, -0.6));
+  this.size = new Vector(1.5, 1.5);
+  // Make it go back and forth in a sine wave.
+  this.wobble = Math.random() * Math.PI * 2;
+}
+Egg.prototype.type = "egg";
 
 // Lava is initialized based on the character, but otherwise has a
 // size and position
@@ -322,14 +335,28 @@ Enemy.prototype.act = function(step) {
   var wobblePos = Math.sin(this.wobble) * wobbleEDist;
   this.pos = this.basePos.plus(new Vector(wobblePos, 0));
 };
+
+var wobbleFSpeed = 10, wobbleFDist = 0.07;
+
+Egg.prototype.act = function(step) {
+  this.wobble += step * wobbleFSpeed;
+  var wobblePos = Math.sin(this.wobble) * wobbleFDist;
+  this.pos = this.basePos.plus(new Vector(0, wobblePos));
+};
 var maxStep = 0.05;
 
 var playerXSpeed = 7;
 
 Player.prototype.moveX = function(step, level, keys) {
   this.speed.x = 0;
-  if (keys.left) this.speed.x -= playerXSpeed;
-  if (keys.right) this.speed.x += playerXSpeed;
+  if (keys.left) {
+	Player.prototype.type = "playerleft"; 
+	this.speed.x -= playerXSpeed;
+  }
+  if (keys.right) {
+	Player.prototype.type = "player"  
+	this.speed.x += playerXSpeed;
+  }
   var motion = new Vector(this.speed.x * step, 0);
   // Find out where the player character will be in this frame
   var newPos = this.pos.plus(motion);
@@ -385,11 +412,17 @@ if (type == "enemy" && this.status == null) {
     this.status = "lost";
     this.finishDelay = 1
 	}
+
   // if the player touches tar and the player hasn't won
   // Player loses
   if (type == "tar" && this.status == null) {
     this.status = "lost";
     this.finishDelay = 1
+	}else if (type == "egg") {
+    this.actors = this.actors.filter(function(other) {
+      return other != actor;
+    });
+	jumpSpeed = 25
 	}else if (type == "coin") {
     this.actors = this.actors.filter(function(other) {
       return other != actor;
@@ -457,7 +490,6 @@ var arrows = trackKeys(arrowCodes);
 // Organize a single level and begin animation
 function runLevel(level, Display, andThen) {
   var display = new Display(document.body, level);
-
   runAnimation(function(step) {
     // Allow the viewer to scroll the level
     level.animate(step, arrows);
@@ -473,7 +505,9 @@ function runLevel(level, Display, andThen) {
 
 function runGame(plans, Display) {
   function startLevel(n) {
-    // Create a new level using the nth element of array plans
+	  Player.prototype.type ="player";
+	  jumpSpeed = 17;
+	// Create a new level using the nth element of array plans
     // Pass in a reference to Display function, DOMDisplay (in index.html).
     runLevel(new Level(plans[n]), Display, function(status) {
       if (status == "lost")

@@ -11,7 +11,9 @@
 
 .actor  { position: absolute;  }
 .player { background-image: url(../img/player.png); }
+.playerleft { background-image: url(../img/playerleft.png); }
 
+.egg { background-image: url(../img/egg.png); }
 .coin { background-image: url(../img/bone.png); }
 
 .enemy { background-image: url(../img/dino.png); }
